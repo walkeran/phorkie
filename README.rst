@@ -74,6 +74,7 @@ phorkie stands on the shoulders of giants.
   $ pear install http_request2
   $ pear install pager
   $ pear install date_humandiff-alpha
+  $ pear insatll MIME_Type
 
   $ pear channel-discover pear.twig-project.org
   $ pear install twig/Twig
