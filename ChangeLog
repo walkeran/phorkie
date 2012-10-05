@@ -1,3 +1,55 @@
+2012-10-01  Christian Weiske  <cweiske@cweiske.de>
+
+	* Fix bug #27: render .json files
+	* Fix bug #31: forked pastes cannot be remote forked
+
+2012-09-28  Christian Weiske  <cweiske@cweiske.de>
+
+	* Check for OpenID package in SetupCheck
+	* Fix bug #24: setupcheck: verify geshi installation
+	* Fix bug #25: setupcheck: verify markdown
+	* Release version 0.3.1
+
+2012-09-28  Christian Weiske  <cweiske@cweiske.de>
+
+	* Fix bug #23: "work dir not found" on failed remote fork
+	* Fix bug #20: elasticsearch error on deletion
+	* Release version 0.3.0
+
+2012-09-27  Christian Weiske  <cweiske@bogo>
+
+	* Fix bug #22: Edited pastes not in "recently created"
+
+2012-09-27  Christian Weiske  <cweiske@cweiske.de>
+
+	* Release of version 0.3.0
+
+2012-09-19  Christian Weiske  <cweiske@cweiske.de>
+
+	* Implement request #13: remote forking support
+	* Implement request #12: add link rel="vcs-git"
+
+2012-09-18  Justin J. Novack  <jnovack@gmail.com>
+
+	* Add Markdown as a known file-type.
+
+2012-09-17  Justin J. Novack <jnovack@gmail.com>
+
+	* Implement request #5: OpenID authentication
+
+2012-09-16  Christian Weiske  <cweiske@cweiske.de>
+
+	* Implement request #12: DOAP documents for all pastes
+
+2012-09-08  Christian Weiske  <cweiske@cweiske.de>
+
+	* Fix bug #11: do not index edit, delete and tool pages
+
+2012-08-22  Stephen Lang  <info@skl.me>
+
+	* Added nginx rewrite rules to README
+	* Fixed bug where autodetect fails, wrong default set.
+
 2012-06-06  Christian Weiske  <cweiske@cweiske.de>
 
 	* Hide additional file fields by default, button to toggle their
@@ -19,7 +71,7 @@
 	* Automatic elasticsearch setup on startup
 	* Use title instead of paste ID
 	* Better pager
-	* Request #3: Show new pastes in sidebar of "new paste" page
+	* Implement request #3: Show new pastes in sidebar of "new paste" page
 
 2012-05-04  Christian Weiske  <cweiske@cweiske.de>
 

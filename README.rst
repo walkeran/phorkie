@@ -15,6 +15,7 @@ Features
 
   - repositories can be cloned
   - clone url can be displayed
+  - remote pastes can be forked (rel="vcs-git" and gist.github.com)
 - paste editing
 
   - add new files
@@ -22,8 +23,9 @@ Features
   - replace file with upload
 - multiple files in one paste
 - syntax highlighting with GeSHi
-- rST rendering
+- rST and Markdown rendering
 - image upload + display
+- OpenID authentication
 - external tool support
 
   - xmllint
@@ -41,7 +43,7 @@ Installation
 ============
 1. Unzip the phorkie release file::
 
-   $ tar xjvf phorkie-0.2.0.tar.bz2
+   $ tar xjvf phorkie-0.3.0.tar.bz2
 
 2. Create the git directories::
 
@@ -58,7 +60,7 @@ Installation
 
    Look at ``config.default.php`` for values that you may adjust.
 
-5. Set your web server's document root to ``/path/to/phorkie-0.2.0/www/``
+5. Set your web server's document root to ``/path/to/phorkie/www/``
 
 6. Open phorkie in your web browser
 
@@ -66,6 +68,13 @@ Installation
 Dependencies
 ============
 phorkie stands on the shoulders of giants.
+
+It requires the following programs to be installed
+on your machine:
+
+- Git v1.7.5 or later
+- PHP v5.3.0 or later
+- PEAR v1.9.2 or later
 
 ::
 
@@ -84,19 +93,25 @@ phorkie stands on the shoulders of giants.
   $ pear channel-discover zustellzentrum.cweiske.de
   $ pear install zz/mime_type_plaindetect-alpha
 
+  $ pear channel-discover pear.michelf.ca
+  $ pear install michelf/Markdown
+
 Note that this version of GeSHi is a bit outdated, but it's the fastest
 way to install it.
+If you install it manually be sure to update the
+path from ``data/config.default.php``.
 
 
 ======
 Search
 ======
 
-phorkie makes use of an Elasticsearch__ installation if you have one.
+phorkie makes use of an Elasticsearch__ installation, if you have one.
 
 It is used to provide search capabilities and the list of recent pastes.
 
 __ http://www.elasticsearch.org/
+
 
 Setup
 =====
@@ -105,6 +120,7 @@ of the index, e.g. ::
 
   http://localhost:9200/phorkie/
 
+You must use a search namespace with Elasticsearch such as ``phorkie/``.
 Run the index script to import all existing pastes into the index::
 
   php scripts/index.php
@@ -124,6 +140,10 @@ index, run the following command::
 Phorkie will automatically re-index everything when ``setupcheck`` is enabled
 in the configuration file.
 
+You may also manually run the reindexing script with::
+
+  $ php scripts/index.php
+
 
 =====
 HowTo
@@ -134,7 +154,7 @@ Make git repositories clonable
 To make git repositories clonable, you need to install ``git-daemon``
 (``git-daemon-run`` package on Debian/Ubuntu).
 
-Now make the repositories available by symlinking the paste repository
+Make the repositories available by symlinking the paste repository
 directory (``$GLOBALS['phorkie']['cfg']['repos']`` setting) into
 ``/var/cache/git``, e.g.::
 
@@ -148,13 +168,46 @@ The rest will be appended automatically.
 You're on your own to setup writable repositories.
 
 
+Protect your site with OpenID
+=============================
+You have the option of enabling OpenID authentication to help secure your
+pastes on phorkie.
+Set the ``$GLOBALS['phorkie']['auth']`` values in the
+``data/config.php`` file as desired.
+
+There are two different types of security you can apply.
+First, you can restrict to one of three ``securityLevels``:
+
+- completely open (``0``)
+- protection of write-enabled functions such as add, edit, etc. (``1``)
+- full site protection (``2``)
+
+Additionally, you can restrict your site to ``listedUsersOnly``.
+You will need to add the individual OpenID urls to the
+``$GLOBALS['phorkie']['auth']['users']`` variable.
+
+
+Get information about paste editors
+===================================
+Phorkie stores the user's OpenID or IP address (when not logged in) when
+a paste is edited.
+It is possible to get this information for each single commit::
+
+    // IP / OpenID for the latest commit
+    $ git notes --ref=identity show
+    127.0.0.1
+
+    // show IP / OpenID for a given commit
+    $ git notes --ref=identity show 29f82a
+    http://cweiske.de/
+
+
 =================
 Technical details
 =================
 
 TODO
 ====
-- OpenID-Login to get username+email as authorship information
 - filters (``xmllint --format``, ``rapper``)
 - document how to keep disk usage low (block size)
 - comments
@@ -169,7 +222,7 @@ URLs
 ====
 
 ``/``
-  Index page. Shows form for new paste
+  Index page.
 ``/[0-9]+``
   Display page for paste
 ``/[0-9]/edit``
@@ -182,12 +235,20 @@ URLs
   Show specific revision of the paste
 ``/[0-9]/delete``
   Delete the paste
+``/[0-9]/doap``
+  Show DOAP document for paste
 ``/[0-9]/fork``
   Create a fork of the paste
 ``/search?q=..(&page=[0-9]+)?``
   Search for term, with optional page
 ``/list(/[0-9])?``
   List all pastes, with optional page
+``/new``
+  Shows form for new paste
+``/login``
+  Login page for protecting site
+``/user``
+  Edit logged-in user information
 
 
 Internal directory layout
@@ -202,3 +263,32 @@ Internal directory layout
       1.git/ - git repository for paste #1
         description - Description for the repository
       2.git/ - git repository for paste #2
+
+nginx rewrites
+==============
+If you use nginx, place the following lines into your ``server`` block:
+
+::
+
+  if (!-e $request_uri) {
+    rewrite ^/([0-9]+)$ /display.php?id=$1;
+    rewrite ^/([0-9]+)/delete$ /delete.php?id=$1;
+    rewrite ^/([0-9]+)/delete/confirm$ /delete.php?id=$1&confirm=1;
+    rewrite ^/([0-9]+)/doap$ /doap.php?id=$1;
+    rewrite ^/([0-9]+)/edit$ /edit.php?id=$1;
+    rewrite ^/([0-9]+)/fork$ /fork.php?id=$1;
+    rewrite ^/([0-9]+)/raw/(.+)$ /raw.php?id=$1&file=$2;
+    rewrite ^/([0-9]+)/rev/(.+)$ /revision.php?id=$1&rev=$2;
+    rewrite ^/([0-9]+)/rev-raw/(.+)$ /raw.php?id=$1&rev=$2&file=$3;
+    rewrite ^/([0-9]+)/tool/([^/]+)/(.+)$ /tool.php?id=$1&tool=$2&file=$3;
+
+    rewrite ^/new$ /new.php;
+    rewrite ^/list$ /list.php;
+    rewrite ^/list/([0-9]+)$ /list.php?page=$1;
+
+    rewrite ^/search$ /search.php;
+    rewrite ^/search/([0-9]+)$ /search.php?page=$1;
+
+    rewrite ^/login$ /login.php;
+    rewrite ^/user$ /user.php;
+  }

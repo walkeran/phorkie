@@ -9,6 +9,17 @@ $GLOBALS['phorkie']['cfg'] = array(
     'topbar'        => '',
     'setupcheck'    => true,
     'elasticsearch' => null,
+    'geshi'         => 'MediaWiki/geshi/geshi/geshi.php',
+    'index'         => 'new'//"new" or "list"
+);
+$GLOBALS['phorkie']['auth'] = array(
+    // 0 = public, no authentication, 1 = protect adds/edits/deletes,
+    // 2 = require authentication
+    'securityLevel'   => 0,
+    'listedUsersOnly' => false,
+    'users'           => array(),             // Array of OpenIDs that may login
+    'anonymousName'   => 'Anonymous',         // Email for non-authenticated commits
+    'anonymousEmail'  => 'anonymous@phorkie', // Email for non-authenticated commits
 );
 $GLOBALS['phorkie']['tools'] = array(
     '\\phorkie\\Tool_Xmllint' => true,
@@ -55,6 +66,22 @@ $GLOBALS['phorkie']['languages'] = array(
         'mime'  => 'application/javascript',
         'geshi' => 'javascript'
     ),
+    'json' => array(
+        'title' => 'Javascript',
+        'mime'  => 'application/javascript',
+        'geshi' => 'javascript',
+        'show'  => false
+    ),
+    'md' => array(
+        'title' => 'Markdown',
+        'mime'  => 'text/x-markdown',
+        'renderer' => '\\phorkie\\Renderer_Markdown'
+    ),
+    'pl' => array(
+        'title' => 'Perl',
+        'mime'  => 'application/x-perl',
+        'geshi' => 'pl'
+    ),
     'php' => array(
         'title' => 'PHP',
         'mime'  => 'text/x-php',
@@ -91,15 +118,15 @@ $GLOBALS['phorkie']['languages'] = array(
         'mime'  => 'image/svg+xml',
         'show'  => false
     ),
-    'ts' => array(
-        'title' => 'TypoScript',
-        'mime'  => 'text/x-typoscript',/* TODO: correct type */
-        'geshi' => 'typoscript'
-    ),
     'txt' => array(
         'title' => 'Text (plain)',
         'mime'  => 'text/plain',
         'geshi' => 'txt'
+    ),
+    'ts' => array(
+        'title' => 'TypoScript',
+        'mime'  => 'text/x-typoscript',/* TODO: correct type */
+        'geshi' => 'typoscript'
     ),
     'xml' => array(
         'title' => 'XML',

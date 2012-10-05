@@ -1,0 +1,25 @@
+{% extends "base.htm" %}
+{% block title %}Profile data{% endblock %}
+
+{% block meta %}
+<meta name="robots" content="noindex"/>
+{% endblock %}
+
+{% block content %}
+
+<h3>User profile</h3>
+<dl>
+ <dt>OpenID</dt>
+ <dd><code>{{ identity }}</code>
+
+ <dt>Name</dt>
+ <dd><code>{{ name }}</code></dd>
+
+ <dt>Email</dt>
+ <dd><code>{{ email }}</code></dd>
+</dl>
+
+<p>
+ You may change this data with your OpenID provider.
+</p>
+{% endblock %}

@@ -8,13 +8,14 @@ class SetupCheck
         'pear.twig-project.org/Twig'       => 'Twig_Autoloader',
         'pear.php.net/Date_HumanDiff'      => 'Date_HumanDiff',
         'pear.php.net/HTTP_Request2'       => 'HTTP_Request2',
+        'pear.php.net/OpenID'              => 'OpenID',
         'pear.php.net/Pager'               => 'Pager',
         'pear.php.net/Services_Libravatar' => 'Services_Libravatar',
         'zustellzentrum.cweiske.de/MIME_Type_PlainDetect' => 'MIME_Type_PlainDetect',
     );
 
     protected $writableDirs;
-
+    protected $elasticsearch;
 
     public function __construct()
     {
@@ -23,6 +24,7 @@ class SetupCheck
             'gitdir' => $cfg['gitdir'],
             'workdir' => $cfg['workdir'],
         );
+        $this->elasticsearch = $cfg['elasticsearch'];
     }
 
     public static function run()
@@ -40,6 +42,18 @@ class SetupCheck
             if (!class_exists($class, true)) {
                 $this->fail('PEAR package not installed: ' . $package);
             }
+        }
+
+        $geshi = stream_resolve_include_path(
+            $GLOBALS['phorkie']['cfg']['geshi']
+        );
+        if ($geshi === false) {
+            $this->fail('GeSHi not available');
+        }
+
+        $markdown = stream_resolve_include_path('markdown.php');
+        if ($markdown === false) {
+            $this->fail('Markdown renderer not available');
         }
     }
 
@@ -73,6 +87,18 @@ class SetupCheck
 
     public function checkDatabase()
     {
+        if ($this->elasticsearch == '') {
+            return;
+        }
+
+        $es = parse_url($this->elasticsearch);
+        if (!preg_match("#/.+/#", $es['path'], $matches)) {
+            $this->fail(
+                'Improper elasticsearch url.  Elasticsearch requires a'
+                . ' search domain to store your data.'
+                . ' (e.g. http://localhost:9200/phorkie/)'
+            );
+        }
         $dbs = new Database();
         $dbs->getSetup()->setup();
     }

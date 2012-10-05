@@ -2,24 +2,32 @@
 {% block title %}New paste{% endblock %}
 
 {% block content %}
-<form method="post" action="/" enctype="multipart/form-data">
- <div class="control-group well pastedata">
+<form method="post" action="/new" enctype="multipart/form-data">
+ <div class="control-group pastedata">
    <label for="description">Description</label>
    <input type="text" name="description" id="description" value="{{description}}"/>
  </div>
 
  {% include 'edit-file.htm' with {'file': file[1], 'fileid': 0, 'newfile': true} %}
-
  {% include 'edit-add.htm' %}
 
- <div class="well" style="text-align: right">
-  <button class="btn btn-primary" type="submit">
-   <i class="icon-check icon-white"></i>
-   Create
-  </button>
+ <div class="row-fluid formbuttons">
+  <div class="span4"></div>
+  <div class="span4" style="text-align: center">
+   {% include 'edit-add-button.htm' %}
+  </div>
+  <div class="span4" style="text-align: right">
+   <button class="btn btn-primary" type="submit">
+    <i class="icon-check icon-white"></i>
+    Create
+   </button>
+  </div>
  </div>
 
 </form>
+
+{% include 'fork-remote-new.htm' %}
+
 <script type="application/javascript">
 $(document).ready(function() {
     initEdit();

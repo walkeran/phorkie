@@ -15,7 +15,7 @@ class Repository_Post
      *
      * @return boolean True if the post was successful
      */
-    public function process($postData)
+    public function process($postData, $sessionData)
     {
         if (!isset($postData['files'])) {
             return false;
@@ -58,7 +58,9 @@ class Repository_Post
 
             if ($name == '') {
                 if ($bUpload) {
-                    $name = Tools::sanitizeFilename($_FILES['files']['name'][$num]['upload']);
+                    $name = Tools::sanitizeFilename(
+                        $_FILES['files']['name'][$num]['upload']
+                    );
                 } else {
                     $name = $this->getNextNumberedFile('phork')
                         . '.' . $arFile['type'];
@@ -102,13 +104,18 @@ class Repository_Post
                 $bCommit = true;
             } else if ($bUpload) {
                 move_uploaded_file(
-                    $_FILES['files']['tmp_name'][$num]['upload'], $file->getFullPath()
+                    $_FILES['files']['tmp_name'][$num]['upload'],
+                    $file->getFullPath()
                 );
                 $command = $vc->getCommand('add')
                     ->addArgument($file->getFilename())
                     ->execute();
                 $bCommit = true;
-            } else if ($bNew || (isset($arFile['content']) && $file->getContent() != $arFile['content'])) {
+            } else if ($bNew
+                || (isset($arFile['content'])
+                    && $file->getContent() != $arFile['content']
+                )
+            ) {
                 file_put_contents($file->getFullPath(), $arFile['content']);
                 $command = $vc->getCommand('add')
                     ->addArgument($file->getFilename())
@@ -117,11 +124,27 @@ class Repository_Post
             }
         }
 
+        if (isset($sessionData['identity'])) {
+            $notes = $sessionData['identity'];
+        } else {
+            $notes = $sessionData['ipaddr'];
+        }
+
         if ($bCommit) {
             $vc->getCommand('commit')
                 ->setOption('message', '')
                 ->setOption('allow-empty-message')
-                ->setOption('author', 'Anonymous <anonymous@phorkie>')
+                ->setOption(
+                    'author',
+                    $sessionData['name'] . ' <' . $sessionData['email'] . '>'
+                )
+                ->execute();
+            //FIXME: git needs ref BEFORE add
+            //quick hack until http://pear.php.net/bugs/bug.php?id=19605 is fixed
+            //also waiting for https://pear.php.net/bugs/bug.php?id=19623
+            $vc->getCommand('notes --ref=identity add')
+                ->setOption('force')
+                ->setOption('message', "$notes")
                 ->execute();
             $bChanged = true;
         }
@@ -161,15 +184,14 @@ class Repository_Post
         $vc->getCommand('init')
             //this should be setOption, but it fails with a = between name and value
             ->addArgument('--separate-git-dir')
-            ->addArgument($GLOBALS['phorkie']['cfg']['gitdir'] . '/' . $repo->id . '.git')
+            ->addArgument(
+                $GLOBALS['phorkie']['cfg']['gitdir'] . '/' . $repo->id . '.git'
+            )
             ->addArgument($repo->workDir)
             ->execute();
 
-        foreach (glob($repo->gitDir . '/hooks/*') as $hookfile) {
-            unlink($hookfile);
-        }
-
-        touch($repo->gitDir . '/git-daemon-export-ok');
+        $rs = new Repository_Setup($repo);
+        $rs->afterInit();
 
         return $repo;
     }
@@ -197,7 +219,7 @@ class Repository_Post
 
     protected function findExtForType($type)
     {
-        $ext = 'text/plain';
+        $ext = 'txt';
         foreach ($GLOBALS['phorkie']['languages'] as $lext => $arLang) {
             if ($arLang['mime'] == $type) {
                 $ext = $lext;

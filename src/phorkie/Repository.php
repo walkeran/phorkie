@@ -32,6 +32,12 @@ class Repository
      */
     public $hash;
 
+    /**
+     * Commit message of the last (or current) revision
+     *
+     * @var string
+     */
+    public $message;
 
 
     /**
@@ -56,6 +62,7 @@ class Repository
         $this->id = (int)$_GET['id'];
         $this->loadDirs();
         $this->loadHash();
+        $this->loadMessage();
     }
 
     protected function loadDirs()
@@ -95,6 +102,28 @@ class Repository
             );
         }
         $this->hash = $output;
+    }
+
+    /**
+     * Populates $this->message
+     *
+     * @return void
+     */
+    public function loadMessage()
+    {
+        $rev = (isset($this->hash)) ? $this->hash : 'HEAD';
+        $output = $this->getVc()->getCommand('log')
+            ->setOption('oneline')
+            ->addArgument('-1')
+            ->addArgument($rev)
+            ->execute();
+        $output = trim($output);
+        if (strpos($output, ' ') > 0) {
+            $output = substr($output, strpos($output, ' '), strlen($output));
+            $this->message = trim($output);
+        } else {
+            $this->message = "This commit message intentionally left blank.";
+        }
     }
 
     public function loadById($id)
@@ -209,14 +238,14 @@ class Repository
     /**
      * Get a link to the repository
      *
-     * @param string $type Link type. Supported are:
-     *                     - "edit"
-     *                     - "delete"
-     *                     - "delete-confirm"
-     *                     - "display"
-     *                     - "fork"
-     *                     - "revision"
-     * @param string $option
+     * @param string $type   Link type. Supported are:
+     *                       - "edit"
+     *                       - "delete"
+     *                       - "delete-confirm"
+     *                       - "display"
+     *                       - "fork"
+     *                       - "revision"
+     * @param string $option Additional link option, e.g. revision number
      *
      * @return string
      */
@@ -228,6 +257,8 @@ class Repository
             return '/' . $this->id;
         } else if ($type == 'fork') {
             return '/' . $this->id . '/fork';
+        } else if ($type == 'doap') {
+            return '/' . $this->id . '/doap';
         } else if ($type == 'delete') {
             return '/' . $this->id . '/delete';
         } else if ($type == 'delete-confirm') {
@@ -278,6 +309,13 @@ class Repository
             $commit->committerTime  = $arOutput[$current + 1];
             $commit->committerName  = $arOutput[$current + 2];
             $commit->committerEmail = $arOutput[$current + 3];
+
+            if (substr($arOutput[$current + 4], 0, 1) != ' ') {
+                //commit without changed lines
+                $arCommits[] = $commit;
+                $current += 4;
+                continue;
+            }
 
             $arLineParts = explode(' ', trim($arOutput[$current + 4]));
             $commit->filesChanged = $arLineParts[0];

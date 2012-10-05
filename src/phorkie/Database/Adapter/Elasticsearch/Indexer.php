@@ -29,9 +29,13 @@ class Database_Adapter_Elasticsearch_Indexer implements Database_IIndexer
             'description' => $repo->getDescription(),
             'tstamp'      => gmdate('c', time()),
         );
+        if ($crdate == null) {
+            $crdate = $this->getCrDate($repo);
+        }
         if ($crdate !== null) {
             $repoData['crdate'] = gmdate('c', $crdate);
         }
+
         $r->setBody(json_encode((object)$repoData));
         $r->send();
 
@@ -57,12 +61,35 @@ class Database_Adapter_Elasticsearch_Indexer implements Database_IIndexer
         }
     }
 
+    /**
+     * When updating the repository, we don't have a creation date.
+     * We need to keep it, but elasticsearch does not have a simple way
+     * to update some fields only (without using a custom script).
+     *
+     * @return integer Unix timestamp
+     */
+    protected function getCrDate(Repository $repo)
+    {
+        $r = new Database_Adapter_Elasticsearch_HTTPRequest(
+            $this->searchInstance . 'repo/' . $repo->id,
+            \HTTP_Request2::METHOD_GET
+        );
+        $json = json_decode($r->send()->getBody());
+
+        if (!isset($json->_source->crdate)) {
+            return null;
+        }
+
+        return strtotime($json->_source->crdate);
+    }
+
     public function deleteAllRepos()
     {
         $r = new Database_Adapter_Elasticsearch_HTTPRequest(
             $this->searchInstance . 'repo/_query',
             \HTTP_Request2::METHOD_DELETE
         );
+        $r->allow404 = true;
         $r->setBody(
             json_encode(
                 (object)array(
@@ -75,6 +102,7 @@ class Database_Adapter_Elasticsearch_Indexer implements Database_IIndexer
             $this->searchInstance . 'file/_query',
             \HTTP_Request2::METHOD_DELETE
         );
+        $r->allow404 = true;
         $r->setBody(
             json_encode(
                 (object)array(
@@ -92,6 +120,7 @@ class Database_Adapter_Elasticsearch_Indexer implements Database_IIndexer
             $this->searchInstance . 'repo/' . $repo->id,
             \HTTP_Request2::METHOD_DELETE
         );
+        $r->allow404 = true;
         $r->send();
 
         $this->deleteRepoFiles($repo);
@@ -104,6 +133,7 @@ class Database_Adapter_Elasticsearch_Indexer implements Database_IIndexer
             $this->searchInstance . 'file/_query',
             \HTTP_Request2::METHOD_DELETE
         );
+        $r->allow404 = true;
         $r->setBody(
             json_encode(
                 (object)array(
